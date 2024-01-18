@@ -720,7 +720,7 @@ function AddPortraitNameBadgeWithDimensions(doc, index, badgeWidth, badgeHeight,
         // WCA Live QR code is assumed to be square
         // We don't draw it if the schedule extended down too far
         if (settings.showWcaLiveQrCode && (height+10) < badgeHeight - 20) {
-            doc.addImage($("#wca-live-qrcode-img")[0], "PNG", halfWidth - 18, badgeHeight - 18, 15, 15, "wca-live-qrcode", "SLOW");
+            doc.addImage($("#qrcode-img")[0], "PNG", halfWidth - 18, badgeHeight - 18, 15, 15, "qrcode", "SLOW");
             doc.setFontSize(8);
             doc.setFont("NotoSans-Regular")
             var wcaLiveLines = doc.splitTextToSize("Live results and full schedule available on WCA Live -", halfWidth - 30);
@@ -851,7 +851,7 @@ function AddLandscapeNameBadgeWithDimensions(doc, index, badgeWidth, badgeHeight
         // WCA Live QR code is assumed to be square
         // We don't draw it if the schedule extended down too far
         if (settings.showWcaLiveQrCode && (height+10) < badgeHeight - 20) {
-            doc.addImage($("#wca-live-qrcode-img")[0], "PNG", halfWidth - 18, badgeHeight - 18, 15, 15, "wca-live-qrcode", "SLOW");
+            doc.addImage($("#qrcode-img")[0], "PNG", halfWidth - 18, badgeHeight - 18, 15, 15, "qrcode", "SLOW");
             doc.setFontSize(8);
             doc.setFont("NotoSans-Regular")
             var wcaLiveLines = doc.splitTextToSize("Live results and full schedule available on WCA Live -", halfWidth - 30);
@@ -968,7 +968,7 @@ function AddChampionshipPortraitNameBadge(doc, index) {
         // WCA Live QR code is assumed to be square
         // We don't draw it if the schedule extended down too far
         if (settings.showWcaLiveQrCode && (height+10) < A6P_HEIGHT - 30) {
-            doc.addImage($("#wca-live-qrcode-img")[0], "PNG", A6P_WIDTH - 25, A6P_HEIGHT - 25, 20, 20, "wca-live-qrcode", "SLOW");
+            doc.addImage($("#qrcode-img")[0], "PNG", A6P_WIDTH - 25, A6P_HEIGHT - 25, 20, 20, "qrcode", "SLOW");
             doc.setFontSize(11);
             doc.setFont("NotoSans-Regular")
             var wcaLiveLines = doc.splitTextToSize("Live results and full schedule available on WCA Live -", A6P_WIDTH - 40);
@@ -989,7 +989,7 @@ function AddChampionshipPortraitNameBadge(doc, index) {
 }
 
 // Draw a standard certificate for podium winners
-function AddCertificate(doc, eventIndex, place, dateText, tintedImage) {
+function AddCertificate(doc, eventIndex, place, dateText, tintedImage, otherEventText="") {
 
     // Get event specific text
     var eventText = "";
@@ -1003,6 +1003,10 @@ function AddCertificate(doc, eventIndex, place, dateText, tintedImage) {
         if (wcif.events[eventIndex].id == "333fm") {
             resultPrefixText = fewestMovesFormatText;
         }
+    }
+
+    if (otherEventText != "") {
+        eventText = otherEventText;
     }
 
     // Determine place specific text
@@ -1492,6 +1496,40 @@ function MakeCertificates() {
                 break;
             }
         }
+    }
+
+    return true;
+}
+
+
+function MakeNewcomerCertificates() {
+    // WCIF doesn't contain main event so assume first event (typically 3x3) is main event
+    let eventIndex = 0;
+
+    // Convert and tint background
+    globalDoc = new jspdf.jsPDF({
+        orientation: 'l',
+        unit:'mm',
+        format:'a4',
+    });
+
+    // Create tinted image
+    var tintedImage = CreateTintedImage($("#certificate-img")[0], HexToRgb(settings.certBackgroundTint));
+    tintedImage.width = $("#certificate-img").width();
+    tintedImage.height = $("#certificate-img").height();
+
+    // Get date text
+    var certDate = moment(wcif.schedule.startDate).add(wcif.schedule.numberOfDays-1, 'days')
+    certDate = certDate.format("D MMMM Y")
+
+    // Create first, second and third certificates for events
+    for (var p=2; p>=0; p--) {    
+        // Create a new page
+        if (p != 2) {
+            globalDoc.addPage("a4", "l");
+        }
+
+        AddCertificate(globalDoc, eventIndex, p, certDate, tintedImage, eventMap[wcif.events[eventIndex].id] + " Newcomer");
     }
 
     return true;
