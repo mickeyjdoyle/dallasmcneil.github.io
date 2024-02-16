@@ -96,6 +96,7 @@ var templates = [
         generationFunction: MakeCertificates,
         isCertificate: true,
         newcomersFirst: false,
+        placeholderImage: "./images/cert-border.png",
     },
     {
         name: "Newcomer Certificates",
@@ -103,6 +104,23 @@ var templates = [
         generationFunction: MakeNewcomerCertificates,
         isCertificate: true,
         newcomersFirst: false,
+        placeholderImage: "./images/cert-border.png",
+    },
+    {
+        name: "Letter Podium Certificates",
+        description: "Landscape certificates for all events",
+        generationFunction: MakeCertificatesLetter,
+        isCertificate: true,
+        newcomersFirst: false,
+        placeholderImage: "./images/cert-border-letter.png",
+    },
+    {
+        name: "Letter Newcomer Certificates",
+        description: "Landscape certificates for fastest newcomer",
+        generationFunction: MakeNewcomerCertificatesLetter,
+        isCertificate: true,
+        newcomersFirst: false,
+        placeholderImage: "./images/cert-border-letter.png",
     },
 ]
 
@@ -312,6 +330,7 @@ function TemplateChanged(select) {
     if (templates[settings.template].isCertificate) {
         $(".badge-only").hide();
         $(".certificate-only").show();
+        $("#certificate-img").attr("src", templates[settings.template].placeholderImage);
     } else {
         $(".badge-only").show();
         $(".certificate-only").hide();

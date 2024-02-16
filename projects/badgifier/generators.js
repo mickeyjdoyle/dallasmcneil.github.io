@@ -989,7 +989,7 @@ function AddChampionshipPortraitNameBadge(doc, index) {
 }
 
 // Draw a standard certificate for podium winners
-function AddCertificate(doc, eventIndex, place, dateText, tintedImage, otherEventText="") {
+function AddCertificate(doc, eventIndex, place, dateText, tintedImage, pageHeight, pageWidth, otherEventText="") {
 
     // Get event specific text
     var eventText = "";
@@ -1021,11 +1021,11 @@ function AddCertificate(doc, eventIndex, place, dateText, tintedImage, otherEven
     // Draw the certificate
     // Add page
     doc.setFillColor(pageColor[0], pageColor[1], pageColor[2]);
-    doc.rect(0, 0, A4L_WIDTH, A4L_HEIGHT, "F");
+    doc.rect(0, 0, pageWidth, pageHeight, "F");
 
     // Add background
     var backgroundRatio = tintedImage.height / tintedImage.width;
-    doc.addImage(tintedImage, "PNG", 0, 0, A4L_WIDTH, A4L_WIDTH * backgroundRatio, "background", "SLOW");
+    doc.addImage(tintedImage, "PNG", 0, 0, pageWidth, pageWidth * backgroundRatio, "background", "SLOW");
 
     var logoMargins = settings.certThinMargins ? [5.0, 5.0] : [22.0, 22.0]
     var logoHeight = 28.0
@@ -1035,36 +1035,36 @@ function AddCertificate(doc, eventIndex, place, dateText, tintedImage, otherEven
     doc.addImage($("#wca-large-img")[0], "PNG", logoMargins[0], logoMargins[1], logoHeight * wcaRatio, logoHeight, "wca-large", "SLOW");
 
     var orgRatio = $("#org-img").width() / $("#org-img").height();
-    doc.addImage($("#org-img")[0], "PNG", A4L_WIDTH - logoMargins[0] - (logoHeight * orgRatio), logoMargins[1], logoHeight * orgRatio, logoHeight, "org", "SLOW");
+    doc.addImage($("#org-img")[0], "PNG", pageWidth - logoMargins[0] - (logoHeight * orgRatio), logoMargins[1], logoHeight * orgRatio, logoHeight, "org", "SLOW");
 
     // Add Main text
     doc.setFont("Barmeno-Regular")
     doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-    DrawText(doc, wcif.name, "center", 10, 76, A4L_WIDTH - 20, 21);
-    DrawText(doc, eventText, "center", 10, 95, A4L_WIDTH - 20, 21);
-    DrawText(doc, placeText, "center", 10, 108, A4L_WIDTH - 20, 11);
+    DrawText(doc, wcif.name, "center", 10, 76, pageWidth - 20, 21);
+    DrawText(doc, eventText, "center", 10, 95, pageWidth - 20, 21);
+    DrawText(doc, placeText, "center", 10, 108, pageWidth - 20, 11);
     doc.setFontSize(22);
-    doc.text(resultPrefixText, (A4L_WIDTH/2) - 2, 139, {
+    doc.text(resultPrefixText, (pageWidth/2) - 2, 139, {
         align:"right",
     });
  
     // Add empty boxes
     doc.setFillColor(255,255,255);
     doc.rect(68, 110, 161, 15, "F");
-    doc.rect(A4L_WIDTH/2, 129, 70, 13, "F");
+    doc.rect(pageWidth/2, 129, 70, 13, "F");
 
     // Add date and signature
     var bottomHeight = logoMargins[1] + 18
     doc.setLineWidth(0.75);
     doc.setDrawColor(textColor[0], textColor[1], textColor[2]);
-    doc.line(logoMargins[0], A4L_HEIGHT - bottomHeight, logoMargins[0] + 60, A4L_HEIGHT - bottomHeight);
-    doc.line(A4L_WIDTH - logoMargins[0], A4L_HEIGHT - bottomHeight, A4L_WIDTH - logoMargins[0] - 60, A4L_HEIGHT - bottomHeight);
+    doc.line(logoMargins[0], pageHeight - bottomHeight, logoMargins[0] + 60, pageHeight - bottomHeight);
+    doc.line(pageWidth - logoMargins[0], pageHeight - bottomHeight, pageWidth - logoMargins[0] - 60, pageHeight - bottomHeight);
 
-    DrawText(doc, dateText, "center", logoMargins[0] - 5, A4L_HEIGHT - bottomHeight - 3, 70, 9);
-    DrawText(doc, settings.certRole, "center", A4L_WIDTH - logoMargins[0] - 65, A4L_HEIGHT - bottomHeight + 14, 70, 8);
+    DrawText(doc, dateText, "center", logoMargins[0] - 5, pageHeight - bottomHeight - 3, 70, 9);
+    DrawText(doc, settings.certRole, "center", pageWidth - logoMargins[0] - 65, pageHeight - bottomHeight + 14, 70, 8);
 
-    DrawText(doc, "DATE", "center", logoMargins[0] - 5, A4L_HEIGHT - bottomHeight + 7, 70, 8);
-    DrawText(doc, settings.certOrganiser, "center", A4L_WIDTH - logoMargins[0] - 65, A4L_HEIGHT - bottomHeight + 7, 70, 9);
+    DrawText(doc, "DATE", "center", logoMargins[0] - 5, pageHeight - bottomHeight + 7, 70, 8);
+    DrawText(doc, settings.certOrganiser, "center", pageWidth - logoMargins[0] - 65, pageHeight - bottomHeight + 7, 70, 9);
 }
 
 // Make a preview or full document from user specified settings
@@ -1489,7 +1489,47 @@ function MakeCertificates() {
                 globalDoc.addPage("a4", "l");
             }
 
-            AddCertificate(globalDoc, e, p, certDate, tintedImage);
+            AddCertificate(globalDoc, e, p, certDate, tintedImage, A4L_HEIGHT, A4L_WIDTH);
+
+            // Only need one page for empty certificate
+            if (e == wcif.events.length) {
+                break;
+            }
+        }
+    }
+
+    return true;
+}
+
+function MakeCertificatesLetter() {
+    
+    // Convert and tint background
+    globalDoc = new jspdf.jsPDF({
+        orientation: 'l',
+        unit:'mm',
+        format:'letter',
+    });
+
+    // Create tinted image
+    var tintedImage = CreateTintedImage($("#certificate-img")[0], HexToRgb(settings.certBackgroundTint));
+    tintedImage.width = $("#certificate-img").width();
+    tintedImage.height = $("#certificate-img").height();
+
+    // Get date text
+    var certDate = moment(wcif.schedule.startDate).add(wcif.schedule.numberOfDays-1, 'days')
+    certDate = certDate.format("D MMMM Y")
+
+    // For each event and a blank
+    for (var e=0; e<wcif.events.length+1; e++) {
+
+        // Create first, second and third certificates for events
+        for (var p=2; p>=0; p--) {    
+            // Create a new page
+            if (e != 0 || p != 2) {
+                globalDoc.addPage("letter", "l");
+            }
+
+            AddCertificate(globalDoc, e, p, certDate, tintedImage, LETTERL_HEIGHT, LETTERL_WIDTH);
 
             // Only need one page for empty certificate
             if (e == wcif.events.length) {
@@ -1529,7 +1569,40 @@ function MakeNewcomerCertificates() {
             globalDoc.addPage("a4", "l");
         }
 
-        AddCertificate(globalDoc, eventIndex, p, certDate, tintedImage, eventMap[wcif.events[eventIndex].id] + " Newcomer");
+        AddCertificate(globalDoc, eventIndex, p, certDate, tintedImage, A4L_HEIGHT, A4L_WIDTH, eventMap[wcif.events[eventIndex].id] + " Newcomer");
+    }
+
+    return true;
+}
+
+function MakeNewcomerCertificatesLetter() {
+    // WCIF doesn't contain main event so assume first event (typically 3x3) is main event
+    let eventIndex = 0;
+
+    // Convert and tint background
+    globalDoc = new jspdf.jsPDF({
+        orientation: 'l',
+        unit:'mm',
+        format:'letter',
+    });
+
+    // Create tinted image
+    var tintedImage = CreateTintedImage($("#certificate-img")[0], HexToRgb(settings.certBackgroundTint));
+    tintedImage.width = $("#certificate-img").width();
+    tintedImage.height = $("#certificate-img").height();
+
+    // Get date text
+    var certDate = moment(wcif.schedule.startDate).add(wcif.schedule.numberOfDays-1, 'days')
+    certDate = certDate.format("D MMMM Y")
+
+    // Create first, second and third certificates for events
+    for (var p=2; p>=0; p--) {    
+        // Create a new page
+        if (p != 2) {
+            globalDoc.addPage("letter", "l");
+        }
+
+        AddCertificate(globalDoc, eventIndex, p, certDate, tintedImage, LETTERL_HEIGHT, LETTERL_WIDTH, eventMap[wcif.events[eventIndex].id] + " Newcomer");
     }
 
     return true;
